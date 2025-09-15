@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stack & Heap Interactive Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Stack & Heap Visualization 🥞🧺</h1>
+    <p>ลองกดปุ่มต่างๆ เพื่อดูการทำงานของหน่วยความจำ</p>
+
+    <div class="controls">
+        <button id="add-to-stack">เพิ่มข้อมูลลง Stack (Primitive)</button>
+        <button id="remove-from-stack">นำข้อมูลออกจาก Stack</button>
+        <button id="cause-stack-overflow">ทำให้เกิด Stack Overflow</button>
+        <hr>
+        <button id="add-to-heap">สร้าง Object ใน Heap</button>
+        <button id="cause-heap-overflow">ทำให้เกิด Heap Overflow (จำลอง)</button>
+        <button id="reset-all">รีเซ็ตทั้งหมด</button>
+    </div>
+
+    <div class="memory-container">
+        <div class="memory-area">
+            <h2>Stack (เข้าทีหลัง, ออกก่อน)</h2>
+            <div id="stack-area" class="stack">
+                </div>
+        </div>
+
+        <div class="memory-area">
+            <h2>Heap (เก็บข้อมูลซับซ้อน)</h2>
+            <div id="heap-area" class="heap">
+                </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
