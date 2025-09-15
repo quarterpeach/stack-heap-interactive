@@ -3,37 +3,667 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stack & Heap Interactive Demo</title>
-    <link rel="stylesheet" href="style.css">
+    <title>JavaScript Interactive Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            --primary-color: #4f46e5;
+            --secondary-color: #10b981;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --subtle-text: #6b7280;
+        }
+        .dark {
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-color: #f9fafb;
+            --subtle-text: #9ca3af;
+        }
+        .concept-box {
+            border: 2px solid var(--primary-color);
+            min-height: 200px;
+            transition: all 0.3s ease;
+        }
+        .code-box {
+            background-color: #2d3748;
+            color: #f7fafc;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+        }
+        .callstack-item, .queue-item, .heap-item, .stack-item {
+            transform-origin: center;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body>
-    <h1>Stack & Heap Visualization 🥞🧺</h1>
-    <p>ลองกดปุ่มต่างๆ เพื่อดูการทำงานของหน่วยความจำ</p>
+<body class="bg-[var(--bg-color)] text-[var(--text-color)] transition-colors duration-300">
 
-    <div class="controls">
-        <button id="add-to-stack">เพิ่มข้อมูลลง Stack (Primitive)</button>
-        <button id="remove-from-stack">นำข้อมูลออกจาก Stack</button>
-        <button id="cause-stack-overflow">ทำให้เกิด Stack Overflow</button>
-        <hr>
-        <button id="add-to-heap">สร้าง Object ใน Heap</button>
-        <button id="cause-heap-overflow">ทำให้เกิด Heap Overflow (จำลอง)</button>
-        <button id="reset-all">รีเซ็ตทั้งหมด</button>
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[var(--primary-color)]">JS Visualizer: เรียนรู้ JavaScript แบบ Interactive</h1>
+            <p class="mt-2 text-lg text-[var(--subtle-text)]">สำรวจแนวคิดหลักของ JavaScript ผ่านภาพเคลื่อนไหวที่เข้าใจง่าย</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex flex-wrap justify-center gap-2 mb-8">
+            <button class="nav-btn bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="stack-heap">Stack & Heap</button>
+            <button class="nav-btn bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="call-stack">Call Stack</button>
+            <button class="nav-btn bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="event-loop">Event Loop & Async</button>
+            <button class="nav-btn bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="promise">Promise States</button>
+            <button class="nav-btn bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="fetch">Fetch API</button>
+            <button class="nav-btn bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105" data-topic="json">JSON</button>
+        </nav>
+
+        <main id="app-container" class="bg-[var(--card-bg)] p-6 rounded-2xl shadow-2xl">
+            <!-- Content will be injected here -->
+        </main>
+
     </div>
-
-    <div class="memory-container">
-        <div class="memory-area">
-            <h2>Stack (เข้าทีหลัง, ออกก่อน)</h2>
-            <div id="stack-area" class="stack">
+    
+    <!-- Templates for different topics -->
+    <template id="stack-heap-template">
+        <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">Stack & Heap Memory</h2>
+            <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> แสดงการจัดสรรหน่วยความจำสำหรับตัวแปรประเภทต่างๆ ใน JavaScript
+                <br>1. <b>Primitive Types</b> (เช่น number, string) จะถูกเก็บไว้ใน <b>Stack</b> โดยตรง
+                <br>2. <b>Reference Types</b> (เช่น object, array) ตัวข้อมูลจะถูกเก็บใน <b>Heap</b> และเก็บที่อยู่ (reference) ของข้อมูลนั้นไว้ใน <b>Stack</b>
+            </p>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">Code</h3>
+                    <div id="stack-heap-code" class="code-box p-4 rounded-lg text-sm"></div>
+                    <div class="mt-4 flex gap-2">
+                        <button id="stack-heap-run" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">Run</button>
+                        <button id="stack-heap-reset" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Reset</button>
+                    </div>
                 </div>
-        </div>
-
-        <div class="memory-area">
-            <h2>Heap (เก็บข้อมูลซับซ้อน)</h2>
-            <div id="heap-area" class="heap">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-center">Stack</h3>
+                        <div id="stack-area" class="concept-box border-indigo-500 p-4 rounded-lg flex flex-col items-center gap-2"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-2 text-center">Heap</h3>
+                        <div id="heap-area" class="concept-box border-pink-500 p-4 rounded-lg flex flex-col items-center gap-2"></div>
+                    </div>
                 </div>
+            </div>
         </div>
-    </div>
+    </template>
 
-    <script src="script.js"></script>
+    <template id="call-stack-template">
+        <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">Call Stack</h2>
+            <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> แสดงการทำงานของ Call Stack ซึ่งใช้ติดตามว่าฟังก์ชันใดกำลังถูกเรียกใช้งาน
+                <br>1. เมื่อมีการเรียกฟังก์ชัน (call a function) ฟังก์ชันนั้นจะถูกเพิ่ม (push) เข้าไปด้านบนสุดของ Stack
+                <br>2. เมื่อฟังก์ชันทำงานเสร็จและคืนค่า (return) มันจะถูกนำออก (pop) จาก Stack
+                <br>3. หลักการทำงานคือ "เข้าทีหลัง ออกก่อน" (Last-In, First-Out - LIFO)
+            </p>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">Code</h3>
+                    <div id="call-stack-code" class="code-box p-4 rounded-lg text-sm"></div>
+                     <div class="mt-4 flex gap-2">
+                        <button id="call-stack-run" class="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600">Run</button>
+                        <button id="call-stack-reset" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Reset</button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-center">Call Stack</h3>
+                    <div id="call-stack-area" class="concept-box border-teal-500 p-4 rounded-lg flex flex-col-reverse items-center gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="event-loop-template">
+        <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">Event Loop & Asynchronous</h2>
+            <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> แสดงการทำงานของ JavaScript กับโค้ดแบบ Asynchronous
+                <br>1. <b>Call Stack:</b> ทำงานตามปกติสำหรับโค้ด Synchronous
+                <br>2. <b>Web API:</b> เมื่อเจอ Asynchronous function (เช่น `setTimeout`) มันจะถูกส่งไปทำงานที่ Web API ของเบราว์เซอร์
+                <br>3. <b>Callback Queue:</b> เมื่อ Web API ทำงานเสร็จ (เช่น timer ครบกำหนด) callback function จะถูกส่งไปรอใน Callback Queue
+                <br>4. <b>Event Loop:</b> จะคอยตรวจสอบว่า Call Stack ว่างหรือไม่ ถ้าว่าง จะดึงงานแรกจาก Callback Queue ไปใส่ใน Call Stack เพื่อทำงาน
+            </p>
+             <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">Code</h3>
+                    <div id="event-loop-code" class="code-box p-4 rounded-lg text-sm"></div>
+                     <div class="mt-4 flex gap-2">
+                        <button id="event-loop-run" class="bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600">Run</button>
+                        <button id="event-loop-reset" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Reset</button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-center">Console Output</h3>
+                    <div id="console-output" class="concept-box border-gray-400 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 h-full"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2 text-center">Call Stack</h3>
+                    <div id="event-loop-call-stack" class="concept-box border-teal-500 p-4 rounded-lg flex flex-col-reverse items-center gap-2"></div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-2 text-center">Web APIs</h3>
+                    <div id="web-apis-area" class="concept-box border-orange-500 p-4 rounded-lg flex flex-col items-center gap-2"></div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-2 text-center">Callback Queue</h3>
+                    <div id="callback-queue-area" class="concept-box border-purple-500 p-4 rounded-lg flex flex-col items-center gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="promise-template">
+        <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">Promise States</h2>
+            <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> Promise คืออ็อบเจกต์ที่แสดงผลลัพธ์ของ Asynchronous operation ที่อาจจะสำเร็จหรือล้มเหลวในอนาคต มี 3 สถานะ:
+                <br>1. <b>Pending:</b> สถานะเริ่มต้น, ยังไม่เสร็จสิ้น
+                <br>2. <b>Fulfilled (Resolved):</b> การทำงานสำเร็จ, มีการส่งค่ากลับมา
+                <br>3. <b>Rejected:</b> การทำงานล้มเหลว, มีการส่ง error กลับมา
+            </p>
+            <div class="text-center">
+                <div id="promise-visual" class="mx-auto my-8 w-48 h-48 rounded-full flex items-center justify-center text-white font-bold text-2xl transition-all duration-500">
+                    <span id="promise-state-text"></span>
+                </div>
+                <p id="promise-result" class="h-8 text-lg font-medium"></p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <button id="promise-resolve-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 text-lg">Resolve (สำเร็จ)</button>
+                    <button id="promise-reject-btn" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 text-lg">Reject (ล้มเหลว)</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="fetch-template">
+         <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">Fetch API</h2>
+             <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> Fetch API คือเครื่องมือสำหรับส่ง HTTP requests ไปยังเซิร์ฟเวอร์เพื่อรับส่งข้อมูล
+                <br>1. <b>GET:</b> ใช้สำหรับ "ดึง" ข้อมูลจากเซิร์ฟเวอร์
+                <br>2. <b>POST:</b> ใช้สำหรับ "ส่ง" ข้อมูลใหม่ไปยังเซิร์ฟเวอร์
+                <br>3. Fetch จะคืนค่าเป็น Promise ซึ่งจะ resolve เป็น Response object เมื่อได้รับการตอบกลับ
+            </p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- GET Request Section -->
+                <div>
+                    <h3 class="text-2xl font-semibold mb-2">Fetch: GET</h3>
+                    <p class="text-[var(--subtle-text)] mb-4">ดึงข้อมูลผู้ใช้จาก Fake API</p>
+                    <button id="fetch-get-btn" class="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 w-full">Fetch User Data</button>
+                    <div id="get-result" class="mt-4 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 min-h-[100px]">
+                        <pre class="text-sm"></pre>
+                    </div>
+                </div>
+                <!-- POST Request Section -->
+                <div>
+                    <h3 class="text-2xl font-semibold mb-2">Fetch: POST</h3>
+                    <p class="text-[var(--subtle-text)] mb-4">สร้างโพสต์ใหม่และส่งไปยัง Fake API</p>
+                    <div class="space-y-2">
+                        <input id="post-title" type="text" placeholder="Post Title" class="w-full p-2 border rounded-lg bg-gray-100 dark:bg-gray-700">
+                        <textarea id="post-body" placeholder="Post Body..." class="w-full p-2 border rounded-lg bg-gray-100 dark:bg-gray-700"></textarea>
+                    </div>
+                    <button id="fetch-post-btn" class="bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 w-full mt-2">Create Post</button>
+                    <div id="post-result" class="mt-4 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 min-h-[100px]">
+                         <pre class="text-sm"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="json-template">
+        <div class="fade-in">
+            <h2 class="text-3xl font-bold text-[var(--primary-color)] mb-4">JSON: stringify & parse</h2>
+            <p class="text-[var(--subtle-text)] mb-6">
+                <b>Workflow:</b> JSON (JavaScript Object Notation) คือรูปแบบมาตรฐานในการรับส่งข้อมูล
+                <br>1. <b>JSON.stringify():</b> แปลง JavaScript Object ให้เป็น JSON String เพื่อเตรียมส่งข้อมูล
+                <br>2. <b>JSON.parse():</b> แปลง JSON String ที่ได้รับกลับมา ให้เป็น JavaScript Object เพื่อใช้งาน
+            </p>
+            <div class="grid md:grid-cols-2 gap-6 items-center">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">JavaScript Object</h3>
+                    <textarea id="js-object-area" class="w-full h-48 p-3 font-mono text-sm border rounded-lg bg-gray-100 dark:bg-gray-700"></textarea>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-semibold mb-2">JSON String</h3>
+                    <textarea id="json-string-area" class="w-full h-48 p-3 font-mono text-sm border rounded-lg bg-gray-100 dark:bg-gray-700" readonly></textarea>
+                </div>
+            </div>
+             <div class="mt-4 flex justify-center gap-4">
+                <button id="stringify-btn" class="bg-fuchsia-500 text-white px-6 py-2 rounded-lg hover:bg-fuchsia-600">Stringify →</button>
+                <button id="parse-btn" class="bg-lime-500 text-white px-6 py-2 rounded-lg hover:bg-lime-600">← Parse</button>
+                <button id="json-reset-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">Reset</button>
+            </div>
+        </div>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const appContainer = document.getElementById('app-container');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    
+    // --- UTILITY FUNCTIONS ---
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const createVisualElement = (text, classes, id = '') => {
+        const el = document.createElement('div');
+        el.textContent = text;
+        el.className = `p-2 rounded-lg shadow-md text-center font-semibold text-sm ${classes}`;
+        if (id) el.id = id;
+        return el;
+    };
+
+    const highlightCodeLine = (codeContainer, lineNumber) => {
+        const lines = codeContainer.innerHTML.split('\n');
+        const highlightedLines = lines.map((line, index) => 
+            index === lineNumber - 1 ? `<span class="bg-yellow-400 bg-opacity-50 block rounded">${line}</span>` : line
+        );
+        codeContainer.innerHTML = highlightedLines.join('\n');
+    };
+
+    // --- TOPIC HANDLERS ---
+    const topics = {
+        'stack-heap': {
+            templateId: 'stack-heap-template',
+            init: () => {
+                const codeContainer = document.getElementById('stack-heap-code');
+                const runBtn = document.getElementById('stack-heap-run');
+                const resetBtn = document.getElementById('stack-heap-reset');
+                const stackArea = document.getElementById('stack-area');
+                const heapArea = document.getElementById('heap-area');
+
+                const defaultCode = `let name = 'John';\nlet age = 25;\n\nlet person = {\n  name: 'John',\n  age: 25\n};\n\nlet member = person;`;
+                
+                const reset = () => {
+                    codeContainer.innerHTML = defaultCode;
+                    stackArea.innerHTML = '';
+                    heapArea.innerHTML = '';
+                    runBtn.disabled = false;
+                };
+
+                const run = async () => {
+                    reset();
+                    runBtn.disabled = true;
+
+                    // Line 1: let name = 'John'
+                    highlightCodeLine(codeContainer, 1);
+                    await sleep(1000);
+                    stackArea.appendChild(createVisualElement("name: 'John'", "bg-blue-200 text-blue-800 stack-item"));
+
+                    // Line 2: let age = 25
+                    highlightCodeLine(codeContainer, 2);
+                    await sleep(1000);
+                    stackArea.appendChild(createVisualElement("age: 25", "bg-blue-200 text-blue-800 stack-item"));
+
+                    // Line 4-7: let person = {...}
+                    highlightCodeLine(codeContainer, 4);
+                    await sleep(1000);
+                    const heapObj = createVisualElement('{ name: "John", age: 25 }', 'bg-green-200 text-green-800 heap-item', 'heap-person');
+                    heapArea.appendChild(heapObj);
+                    const stackRef = createVisualElement("person: (ref to heap)", "bg-orange-200 text-orange-800 stack-item");
+                    stackArea.appendChild(stackRef);
+                    
+                    // Line 9: let member = person
+                    highlightCodeLine(codeContainer, 9);
+                    await sleep(1000);
+                    const memberRef = createVisualElement("member: (ref to heap)", "bg-orange-200 text-orange-800 stack-item");
+                    stackArea.appendChild(memberRef);
+                    
+                    highlightCodeLine(codeContainer, -1); // Clear highlight
+                    runBtn.disabled = false;
+                };
+
+                runBtn.addEventListener('click', run);
+                resetBtn.addEventListener('click', reset);
+                reset();
+            }
+        },
+        'call-stack': {
+            templateId: 'call-stack-template',
+            init: () => {
+                const codeContainer = document.getElementById('call-stack-code');
+                const runBtn = document.getElementById('call-stack-run');
+                const resetBtn = document.getElementById('call-stack-reset');
+                const stackArea = document.getElementById('call-stack-area');
+                
+                const defaultCode = `function first() {\n  console.log('Enter first');\n  second();\n  console.log('Exit first');\n}\n\nfunction second() {\n  console.log('Enter second');\n  third();\n  console.log('Exit second');\n}\n\nfunction third() {\n  console.log('Called third!');\n}\n\nfirst();`;
+                
+                const reset = () => {
+                    codeContainer.innerHTML = defaultCode;
+                    stackArea.innerHTML = '';
+                    runBtn.disabled = false;
+                };
+                
+                const run = async () => {
+                    reset();
+                    runBtn.disabled = true;
+                    
+                    const pushToStack = async (name, line) => {
+                        highlightCodeLine(codeContainer, line);
+                        await sleep(800);
+                        const item = createVisualElement(name, 'bg-teal-200 text-teal-800 w-4/5 callstack-item');
+                        stackArea.appendChild(item);
+                        await sleep(800);
+                    };
+
+                    const popFromStack = async (line) => {
+                        highlightCodeLine(codeContainer, line);
+                        await sleep(800);
+                        const item = stackArea.lastChild;
+                        if(item) {
+                           item.style.transform = 'scale(0)';
+                           await sleep(500);
+                           item.remove();
+                        }
+                    };
+                    
+                    // Start execution
+                    await pushToStack('main()', 16);
+                    await pushToStack('first()', 1);
+                    await pushToStack('second()', 7);
+                    await pushToStack('third()', 12);
+                    await popFromStack(14); // third returns
+                    await popFromStack(10); // second returns
+                    await popFromStack(4);  // first returns
+                    await popFromStack(16); // main finishes
+                    
+                    highlightCodeLine(codeContainer, -1);
+                    runBtn.disabled = false;
+                };
+
+                runBtn.addEventListener('click', run);
+                resetBtn.addEventListener('click', reset);
+                reset();
+            }
+        },
+        'event-loop': {
+            templateId: 'event-loop-template',
+            init: () => {
+                const codeContainer = document.getElementById('event-loop-code');
+                const runBtn = document.getElementById('event-loop-run');
+                const resetBtn = document.getElementById('event-loop-reset');
+                const consoleOutput = document.getElementById('console-output');
+                const callStackArea = document.getElementById('event-loop-call-stack');
+                const webApisArea = document.getElementById('web-apis-area');
+                const callbackQueueArea = document.getElementById('callback-queue-area');
+                
+                const defaultCode = `console.log('Start');\n\nsetTimeout(() => {\n  console.log('Timeout Callback!');\n}, 1000);\n\nconsole.log('End');`;
+
+                const addToConsole = (msg) => {
+                    const p = document.createElement('p');
+                    p.textContent = `> ${msg}`;
+                    p.className = 'font-mono text-sm';
+                    consoleOutput.appendChild(p);
+                };
+                
+                const reset = () => {
+                    codeContainer.innerHTML = defaultCode;
+                    [consoleOutput, callStackArea, webApisArea, callbackQueueArea].forEach(el => el.innerHTML = '');
+                    runBtn.disabled = false;
+                };
+
+                const run = async () => {
+                    reset();
+                    runBtn.disabled = true;
+                    
+                    const moveElement = async (text, from, to, classes) => {
+                        const item = createVisualElement(text, classes);
+                        to.appendChild(item);
+                        await sleep(500);
+                        return item;
+                    };
+                    
+                    // 1. console.log('Start')
+                    highlightCodeLine(codeContainer, 1);
+                    let task = await moveElement(`console.log('Start')`, null, callStackArea, 'bg-teal-200 text-teal-800 w-4/5');
+                    await sleep(800);
+                    addToConsole('Start');
+                    task.remove();
+                    
+                    // 2. setTimeout
+                    highlightCodeLine(codeContainer, 3);
+                    task = await moveElement(`setTimeout`, null, callStackArea, 'bg-teal-200 text-teal-800 w-4/5');
+                    await sleep(800);
+                    const apiTask = await moveElement('Timer (1s)', callStackArea, webApisArea, 'bg-orange-200 text-orange-800 w-4/5');
+                    task.remove();
+
+                    // 3. console.log('End')
+                    highlightCodeLine(codeContainer, 7);
+                    task = await moveElement(`console.log('End')`, null, callStackArea, 'bg-teal-200 text-teal-800 w-4/5');
+                    await sleep(800);
+                    addToConsole('End');
+                    task.remove();
+
+                    // 4. Timer finishes
+                    await sleep(1000);
+                    apiTask.remove();
+                    const queueTask = await moveElement('Callback', webApisArea, callbackQueueArea, 'bg-purple-200 text-purple-800 w-4/5');
+                    
+                    // 5. Event loop moves callback
+                    await sleep(800);
+                    queueTask.remove();
+                    task = await moveElement('Callback', callbackQueueArea, callStackArea, 'bg-teal-200 text-teal-800 w-4/5');
+                    
+                    // 6. Execute callback
+                    highlightCodeLine(codeContainer, 4);
+                    await sleep(800);
+                    addToConsole('Timeout Callback!');
+                    task.remove();
+
+                    highlightCodeLine(codeContainer, -1);
+                    runBtn.disabled = false;
+                };
+                
+                runBtn.addEventListener('click', run);
+                resetBtn.addEventListener('click', reset);
+                reset();
+            }
+        },
+        'promise': {
+            templateId: 'promise-template',
+            init: () => {
+                const visual = document.getElementById('promise-visual');
+                const stateText = document.getElementById('promise-state-text');
+                const resultText = document.getElementById('promise-result');
+                const resolveBtn = document.getElementById('promise-resolve-btn');
+                const rejectBtn = document.getElementById('promise-reject-btn');
+                
+                const setPromiseState = (state, resultMsg = '') => {
+                    stateText.textContent = state;
+                    resultText.textContent = resultMsg;
+                    visual.classList.remove('bg-gray-400', 'bg-green-500', 'bg-red-500');
+                    switch(state) {
+                        case 'pending':
+                            visual.classList.add('bg-gray-400');
+                            resolveBtn.disabled = false;
+                            rejectBtn.disabled = false;
+                            break;
+                        case 'fulfilled':
+                            visual.classList.add('bg-green-500');
+                            resolveBtn.disabled = true;
+                            rejectBtn.disabled = true;
+                            break;
+                        case 'rejected':
+                             visual.classList.add('bg-red-500');
+                             resolveBtn.disabled = true;
+                             rejectBtn.disabled = true;
+                            break;
+                    }
+                };
+                
+                setPromiseState('pending');
+
+                resolveBtn.addEventListener('click', () => {
+                    setPromiseState('fulfilled', 'Promise resolved with value: "Success!"');
+                });
+                
+                rejectBtn.addEventListener('click', () => {
+                    setPromiseState('rejected', 'Promise rejected with error: "Failed!"');
+                });
+            }
+        },
+        'fetch': {
+            templateId: 'fetch-template',
+            init: () => {
+                const getBtn = document.getElementById('fetch-get-btn');
+                const postBtn = document.getElementById('fetch-post-btn');
+                const getResult = document.querySelector('#get-result pre');
+                const postResult = document.querySelector('#post-result pre');
+                const postTitle = document.getElementById('post-title');
+                const postBody = document.getElementById('post-body');
+                
+                const FAKE_API = 'https://jsonplaceholder.typicode.com';
+
+                const displayResult = (el, data, title) => {
+                    el.textContent = `${title}\n\n` + JSON.stringify(data, null, 2);
+                };
+
+                const displayLoading = (el) => {
+                    el.textContent = 'Fetching data...';
+                };
+
+                const displayError = (el, error) => {
+                    el.textContent = `Error: ${error.message}`;
+                };
+
+                getBtn.addEventListener('click', async () => {
+                    displayLoading(getResult);
+                    try {
+                        const response = await fetch(`${FAKE_API}/users/1`);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        displayResult(getResult, data, '// GET Response');
+                    } catch (error) {
+                        displayError(getResult, error);
+                    }
+                });
+
+                postBtn.addEventListener('click', async () => {
+                    const title = postTitle.value;
+                    const body = postBody.value;
+                    if(!title || !body) {
+                        postResult.textContent = 'Please provide a title and body.';
+                        return;
+                    }
+                    displayLoading(postResult);
+                     try {
+                        const response = await fetch(`${FAKE_API}/posts`, {
+                            method: 'POST',
+                            body: JSON.stringify({ title, body, userId: 1 }),
+                            headers: { 'Content-type': 'application/json; charset=UTF-8' },
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        displayResult(postResult, data, '// POST Response');
+                    } catch (error) {
+                        displayError(postResult, error);
+                    }
+                });
+            }
+        },
+        'json': {
+            templateId: 'json-template',
+            init: () => {
+                const jsArea = document.getElementById('js-object-area');
+                const jsonArea = document.getElementById('json-string-area');
+                const stringifyBtn = document.getElementById('stringify-btn');
+                const parseBtn = document.getElementById('parse-btn');
+                const resetBtn = document.getElementById('json-reset-btn');
+
+                const defaultObject = {
+                    id: 1,
+                    user: "John Doe",
+                    isAdmin: true,
+                    courses: ["HTML", "CSS", "JS"],
+                    profile: {
+                        avatar: "url.jpg",
+                        theme: "dark"
+                    },
+                    lastLogin: undefined, // Will be ignored
+                    sayHi: function() { alert('hi') } // Will be ignored
+                };
+
+                const reset = () => {
+                    jsArea.value = JSON.stringify(defaultObject, (key, value) => {
+                        if (typeof value === 'function') {
+                            return value.toString();
+                        }
+                        return value;
+                    }, 2);
+                    jsonArea.value = '';
+                    jsArea.readOnly = false;
+                };
+
+                stringifyBtn.addEventListener('click', () => {
+                    try {
+                        const obj = eval('(' + jsArea.value + ')');
+                        jsonArea.value = JSON.stringify(obj, null, 2);
+                    } catch (e) {
+                        jsonArea.value = `Error: ${e.message}`;
+                    }
+                });
+
+                parseBtn.addEventListener('click', () => {
+                    try {
+                        const obj = JSON.parse(jsonArea.value);
+                        jsArea.value = JSON.stringify(obj, null, 2);
+                    } catch (e) {
+                         jsArea.value = `Error parsing JSON: ${e.message}`;
+                    }
+                });
+
+                resetBtn.addEventListener('click', reset);
+                reset();
+            }
+        }
+    };
+
+    // --- MAIN LOGIC ---
+    function loadTopic(topic) {
+        if (!topics[topic]) return;
+
+        const template = document.getElementById(topics[topic].templateId);
+        appContainer.innerHTML = template.innerHTML;
+        topics[topic].init();
+        
+        // Update active button style
+        navButtons.forEach(btn => {
+            if (btn.dataset.topic === topic) {
+                btn.classList.add('ring-2', 'ring-offset-2', 'ring-white');
+            } else {
+                btn.classList.remove('ring-2', 'ring-offset-2', 'ring-white');
+            }
+        });
+    }
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            loadTopic(button.dataset.topic);
+        });
+    });
+
+    // Load the first topic by default
+    loadTopic('stack-heap');
+});
+
+</script>
+
 </body>
 </html>
